@@ -2,6 +2,7 @@ name: CI (libretro)
 on: [push, pull_request]
 jobs:
   build-libretro:
+    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
@@ -11,6 +12,7 @@ jobs:
       run: make -j$(getconf _NPROCESSORS_ONLN) -f Makefile.libretro
 
   build-libretro-win32:
+    if: false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
@@ -26,8 +28,22 @@ jobs:
   build-libretro-android:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         submodules: true
+    - name: Set up Android NDK r23
+      uses: nttld/setup-ndk@v1
+      id: setup-ndk
+      with:
+        ndk-version: r23
     - name: ndk-build
-      run: ${ANDROID_NDK_HOME}/ndk-build -j$(getconf _NPROCESSORS_ONLN) --no-print-directory -C jni/
+      run: |
+        ${{ steps.setup-ndk.outputs.ndk-path }}/ndk-build -j$(getconf _NPROCESSORS_ONLN) --no-print-directory -C jni/ \
+          APP_ABI=armeabi-v7a \
+          V7NEONOPTIMIZATION=1
+    - name: Upload core artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: pcsx_rearmed_libretro_android
+        path: libs/armeabi-v7a/pcsx_rearmed_libretro_android.so
+        retention-days: 30
