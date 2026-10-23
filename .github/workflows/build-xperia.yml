@@ -7,7 +7,7 @@ on:
 
 env:
   NDK_VERSION: r23c
-  # r23c's lowest supported platform is android-16 (4.0.4 = API 15 is not supported by r23c)
+  # r23c's lowest supported platform is android-16 (API 15 / 4.0.4 is not supported by r23c)
   APP_PLATFORM: android-16
   APP_ABI: armeabi-v7a
 
@@ -30,12 +30,9 @@ jobs:
       - name: Build core (official: ndk-build -C jni/)
         run: |
           # Xperia Play = Snapdragon S2 (Scorpion, ARMv7-A, NEON, VFPv3).
-          # Android.mk already sets ARM mode + NEON for armeabi-v7a, NEON GPU,
-          # NEON GTE, ARI64 dynarec, async GPU/SPU/CDROM and threaded dynarec.
-          OPT="-O3 -ffast-math -fno-math-errno -fomit-frame-pointer \
-               -fno-stack-protector -fno-plt -fmerge-all-constants \
-               -ffunction-sections -fdata-sections \
-               -mcpu=cortex-a8 -mtune=cortex-a8 -DNDEBUG"
+          # Android.mk already enables ARM mode, NEON, NEON GPU/GTE, ARI64 dynarec
+          # and async GPU/SPU/CDROM threads for armeabi-v7a.
+          OPT="-O3 -ffast-math -fno-math-errno -fomit-frame-pointer -fno-stack-protector -fno-plt -fmerge-all-constants -ffunction-sections -fdata-sections -mcpu=cortex-a8 -mtune=cortex-a8 -DNDEBUG"
 
           "${ANDROID_NDK_HOME}/ndk-build" -j"$(nproc)" --no-print-directory -C jni/ \
             APP_ABI="${APP_ABI}" \
