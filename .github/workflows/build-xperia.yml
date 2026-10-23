@@ -1,0 +1,59 @@
+name: Build pcsx_rearmed (Android 4.0.4 / Xperia Play)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+
+env:
+  NDK_VERSION: r23c
+  # r23c's lowest supported platform is android-16 (4.0.4 = API 15 is not supported by r23c)
+  APP_PLATFORM: android-16
+  APP_ABI: armeabi-v7a
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install NDK r23c
+        run: |
+          wget -q https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip -O ndk.zip
+          unzip -q ndk.zip -d "$HOME"
+          echo "ANDROID_NDK_HOME=$HOME/android-ndk-${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Build core (official: ndk-build -C jni/)
+        run: |
+          # Xperia Play = Snapdragon S2 (Scorpion, ARMv7-A, NEON, VFPv3).
+          # Android.mk already sets ARM mode + NEON for armeabi-v7a, NEON GPU,
+          # NEON GTE, ARI64 dynarec, async GPU/SPU/CDROM and threaded dynarec.
+          OPT="-O3 -ffast-math -fno-math-errno -fomit-frame-pointer \
+               -fno-stack-protector -fno-plt -fmerge-all-constants \
+               -ffunction-sections -fdata-sections \
+               -mcpu=cortex-a8 -mtune=cortex-a8 -DNDEBUG"
+
+          "${ANDROID_NDK_HOME}/ndk-build" -j"$(nproc)" --no-print-directory -C jni/ \
+            APP_ABI="${APP_ABI}" \
+            APP_PLATFORM="${APP_PLATFORM}" \
+            APP_OPTIM=release \
+            APP_CFLAGS="${OPT}" \
+            APP_CPPFLAGS="${OPT}" \
+            APP_LDFLAGS="-Wl,--gc-sections -Wl,-O1"
+
+      - name: Collect output
+        run: |
+          mkdir -p out
+          cp libs/armeabi-v7a/libretro.so out/pcsx_rearmed_libretro_android.so
+          ls -lh out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pcsx_rearmed_libretro_android-armeabi-v7a
+          path: out/pcsx_rearmed_libretro_android.so
+          if-no-files-found: error
