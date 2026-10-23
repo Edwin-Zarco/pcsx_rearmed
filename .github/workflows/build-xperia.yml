@@ -27,7 +27,7 @@ jobs:
           unzip -q ndk.zip -d "$HOME"
           echo "ANDROID_NDK_HOME=$HOME/android-ndk-${NDK_VERSION}" >> "$GITHUB_ENV"
 
-      - name: Build core (official: ndk-build -C jni/)
+      - name: "Build core (ndk-build -C jni/)"
         run: |
           # Xperia Play = Snapdragon S2 (Scorpion, ARMv7-A, NEON, VFPv3).
           # Android.mk already enables ARM mode, NEON, NEON GPU/GTE, ARI64 dynarec
